@@ -451,3 +451,474 @@ chi_squared_result_engel <- chisq.test(contingency_table_engel)
 # Print the results
 print(engel_results)
 cat("\nP-Value for Engel 1 and 2 vs Engel >2:", chi_squared_result_engel$p.value, "\n")
+
+
+
+
+
+
+library(survival)
+library(ggplot2)
+library(survival)
+library(survminer)
+library(reshape2)
+# Convert follow-up months to years
+dfdf$duration_years <- dfdf[,7] / 12
+
+# Consider zeros in column 43 as censored
+dfdf$censored <- ifelse(dfdf[,43] == 0, 1, 0) 
+
+dfdf$Spike_group <- dfdf[,8] != 0
+dfdf$HFO_group <- dfdf[,10] != 0
+
+# Separate data for the two groups
+dfdf$group <- ifelse(dfdf[,8] != 0, "Spike", ifelse(dfdf[,10] != 0, "HFO", NA))
+
+# Kaplan-Meier survival curves
+#fit_combined <- survfit(Surv(dfdf$duration_years, dfdf$censored) ~ group, data = dfdf)
+
+# Plot the survival curves with 95% CI
+#ggsurvplot(fit_combined, data = dfdf, conf.int = TRUE, legend = c(0.7, 0.25), risk.table = "absolute")
+
+# Reshape the data
+#melted_data <- melt(dfdf, id.vars = c("duration_years", "censored"), 
+                    #measure.vars = c("Spike_group", "HFO_group"))
+
+melted_data <- melt(dfdf, id.vars = c("duration_years", "censored"), 
+                    measure.vars = c("Spike_group", "HFO_group"))
+
+# Filter only relevant rows
+filtered_data <- melted_data[melted_data$value != 0, ]
+
+#print(table(filtered_data$variable))
+
+# Filter only relevant rows
+#filtered_data <- melted_data[melted_data$value == TRUE, ]
+
+# Kaplan-Meier survival curves
+fit_combined <- survfit(Surv(filtered_data$duration_years, filtered_data$censored) ~ variable, data = filtered_data)
+
+# Plot the survival curves with 95% CI
+#ggsurvplot(fit_combined, conf.int = TRUE, legend = c(0.7, 0.25), risk.table = "absolute", palette = c("blue", "red"))
+ggsurvplot(fit_combined, data = filtered_data, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+print(fit_combined)
+
+logrank_test <- survdiff(Surv(filtered_data$duration_years, filtered_data$censored) ~ variable, data = filtered_data)
+print(logrank_test)
+
+print(fit_combined)
+
+#fit_spike <- survfit(Surv(dfdf$duration_years, dfdf$censored) ~ Spike_group, data = dfdf)
+#fit_hfo <- survfit(Surv(dfdf$duration_years, dfdf$censored) ~ HFO_group, data = dfdf)
+# Create the group variable that combines the Spike and HFO groups
+#dfdf$combined_group <- ifelse(dfdf$Spike_group, "Spike", ifelse(dfdf$HFO_group, "HFO", NA))
+
+# Fit Kaplan-Meier survival curve
+#fit_combined <- survfit(Surv(dfdf$duration_years, dfdf$censored) ~ combined_group, data = dfdf)
+
+# Plot the survival curves with 95% CI
+#ggsurvplot(fit_combined, data = dfdf, conf.int = TRUE, legend = c(0.7, 0.25), risk.table = "absolute", palette = c("blue", "red"))
+
+
+
+
+
+
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,47] == 0, 1, 0) 
+dfdf$Spike_group <- dfdf[,8] != 0
+dfdf$HFO_group <- dfdf[,10] != 0
+dfdf$group <- ifelse(dfdf[,8] != 0, "Spike", ifelse(dfdf[,10] != 0, "HFO", NA))
+melted_data <- melt(dfdf, id.vars = c("duration_years", "censored"), 
+                    measure.vars = c("Spike_group", "HFO_group"))
+filtered_data <- melted_data[melted_data$value != 0, ]
+fit_combined <- survfit(Surv(filtered_data$duration_years, filtered_data$censored) ~ variable, data = filtered_data)
+ggsurvplot(fit_combined, data = filtered_data, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+print(fit_combined)
+logrank_test <- survdiff(Surv(filtered_data$duration_years, filtered_data$censored) ~ variable, data = filtered_data)
+print(logrank_test)
+print(fit_combined)
+
+
+
+
+# Convert follow-up months to years
+dfdf$duration_years <- dfdf[,7] / 12
+
+# Combine Engel scores: 1 for Success (Engel 1A or Engel 1 & 2) and 0 for Failure (Not Engel 1A or Engel > 2)
+dfdf$engel_status <- ifelse(dfdf[,42] > 0 | dfdf[,46] > 0, 1, 
+                            ifelse(dfdf[,44] > 0 | dfdf[,48] > 0, 0, NA))
+
+# Remove records with NA in engel_status
+dfdf <- dfdf[!is.na(dfdf$engel_status),]
+
+# Create groups for Spike and HFO
+dfdf$group <- ifelse(dfdf[,8] > 0, "Spike", 
+                     ifelse(dfdf[,10] > 0, "HFO", NA))
+
+# Fit the combined Kaplan-Meier survival curves
+fit_combined <- survfit(Surv(dfdf$duration_years, dfdf$engel_status) ~ group, data = dfdf)
+
+# Plot the survival curves with 95% CI
+ggsurvplot(fit_combined, data = dfdf, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+# Conduct log-rank test
+logrank_test <- survdiff(Surv(dfdf$duration_years, dfdf$engel_status) ~ group, data = dfdf)
+print(logrank_test)
+
+
+
+
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,42] == 0, 1, 0)
+
+dfdf$MTS_group <- dfdf[,20] != 0
+dfdf$CorticalDysplasia_group <- dfdf[,22] != 0
+dfdf$VascularLesion_group <- dfdf[,24] != 0
+dfdf$Tumor_group <- dfdf[,32] != 0
+
+melted_data <- melt(dfdf, id.vars = c("duration_years", "censored"), 
+                    measure.vars = c("MTS_group", "CorticalDysplasia_group", "VascularLesion_group", "Tumor_group"))
+filtered_data <- melted_data[melted_data$value != 0, ]
+
+fit_combined <- survfit(Surv(filtered_data$duration_years, filtered_data$censored) ~ variable, data = filtered_data)
+ggsurvplot(fit_combined, data = filtered_data, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red", "green", "purple"))
+
+logrank_test <- survdiff(Surv(filtered_data$duration_years, filtered_data$censored) ~ variable, data = filtered_data)
+print(logrank_test)
+print(fit_combined)
+
+
+
+
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,46] == 0, 1, 0)
+
+dfdf$MTS_group <- dfdf[,20] != 0
+dfdf$CorticalDysplasia_group <- dfdf[,22] != 0
+dfdf$VascularLesion_group <- dfdf[,24] != 0
+dfdf$Tumor_group <- dfdf[,32] != 0
+
+melted_data <- melt(dfdf, id.vars = c("duration_years", "censored"), 
+                    measure.vars = c("MTS_group", "CorticalDysplasia_group", "VascularLesion_group", "Tumor_group"))
+filtered_data <- melted_data[melted_data$value != 0, ]
+
+fit_combined <- survfit(Surv(filtered_data$duration_years, filtered_data$censored) ~ variable, data = filtered_data)
+ggsurvplot(fit_combined, data = filtered_data, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red", "green", "purple"))
+
+logrank_test <- survdiff(Surv(filtered_data$duration_years, filtered_data$censored) ~ variable, data = filtered_data)
+print(logrank_test)
+print(fit_combined)
+
+
+
+
+
+# Convert follow-up months to years
+dfdf$duration_years <- dfdf[,7] / 12
+
+# Combine Engel scores
+dfdf$engel_status <- ifelse(dfdf[,42] > 0 | dfdf[,46] > 0, 1, 
+                            ifelse(dfdf[,44] > 0 | dfdf[,48] > 0, 0, NA))
+
+# Remove records with NA in engel_status
+dfdf <- dfdf[!is.na(dfdf$engel_status),]
+
+# Create groups for MTS, Cortical Dysplasia, Vascular Lesion, and Tumor
+dfdf$group <- ifelse(dfdf[,20] > 0, "MTS", 
+                     ifelse(dfdf[,22] > 0, "Cortical Dysplasia",
+                            ifelse(dfdf[,24] > 0, "Vascular Lesion", 
+                                   ifelse(dfdf[,32] > 0, "Tumor", NA))))
+
+# Fit the combined Kaplan-Meier survival curves
+fit_combined <- survfit(Surv(dfdf$duration_years, dfdf$engel_status) ~ group, data = dfdf)
+
+# Plot the survival curves with 95% CI
+ggsurvplot(fit_combined, data = dfdf, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red", "green", "purple"))
+
+# Conduct log-rank test
+logrank_test <- survdiff(Surv(dfdf$duration_years, dfdf$engel_status) ~ group, data = dfdf)
+print(logrank_test)
+
+
+
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,46] == 0, 1, 0)
+
+# Filter data for MTS patients
+dfdf_MTS <- dfdf[dfdf[,20] != 0, ]
+
+dfdf_MTS$Spike_group <- dfdf_MTS[,8] != 0
+dfdf_MTS$HFO_group <- dfdf_MTS[,10] != 0
+
+melted_data_MTS <- melt(dfdf_MTS, id.vars = c("duration_years", "censored"), 
+                        measure.vars = c("Spike_group", "HFO_group"))
+filtered_data_MTS <- melted_data_MTS[melted_data_MTS$value != 0, ]
+
+fit_combined_MTS <- survfit(Surv(filtered_data_MTS$duration_years, filtered_data_MTS$censored) ~ variable, data = filtered_data_MTS)
+ggsurvplot(fit_combined_MTS, data = filtered_data_MTS, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+logrank_test_MTS <- survdiff(Surv(filtered_data_MTS$duration_years, filtered_data_MTS$censored) ~ variable, data = filtered_data_MTS)
+print(logrank_test_MTS)
+print(fit_combined_MTS)
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,42] == 0, 1, 0)
+
+# Filter data for MTS patients
+dfdf_MTS <- dfdf[dfdf[,20] != 0, ]
+
+dfdf_MTS$Spike_group <- dfdf_MTS[,8] != 0
+dfdf_MTS$HFO_group <- dfdf_MTS[,10] != 0
+
+melted_data_MTS <- melt(dfdf_MTS, id.vars = c("duration_years", "censored"), 
+                        measure.vars = c("Spike_group", "HFO_group"))
+filtered_data_MTS <- melted_data_MTS[melted_data_MTS$value != 0, ]
+
+fit_combined_MTS <- survfit(Surv(filtered_data_MTS$duration_years, filtered_data_MTS$censored) ~ variable, data = filtered_data_MTS)
+ggsurvplot(fit_combined_MTS, data = filtered_data_MTS, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+logrank_test_MTS <- survdiff(Surv(filtered_data_MTS$duration_years, filtered_data_MTS$censored) ~ variable, data = filtered_data_MTS)
+print(logrank_test_MTS)
+print(fit_combined_MTS)
+
+# Convert follow-up months to years
+dfdf$duration_years <- dfdf[,7] / 12
+
+# Combine Engel scores
+dfdf$engel_status <- ifelse(dfdf[,42] > 0 | dfdf[,46] > 0, 1, 
+                            ifelse(dfdf[,44] > 0 | dfdf[,48] > 0, 0, NA))
+
+# Remove records with NA in engel_status
+dfdf <- dfdf[!is.na(dfdf$engel_status),]
+
+# Filter data for MTS patients
+dfdf_MTS <- dfdf[dfdf[,20] != 0, ]
+
+dfdf_MTS$group <- ifelse(dfdf_MTS[,8] > 0, "Spike", 
+                         ifelse(dfdf_MTS[,10] > 0, "HFO", NA))
+
+# Fit the combined Kaplan-Meier survival curves for MTS patients
+fit_combined_MTS <- survfit(Surv(dfdf_MTS$duration_years, dfdf_MTS$engel_status) ~ group, data = dfdf_MTS)
+
+# Plot the survival curves with 95% CI
+ggsurvplot(fit_combined_MTS, data = dfdf_MTS, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+# Conduct log-rank test for MTS patients
+logrank_test_MTS <- survdiff(Surv(dfdf_MTS$duration_years, dfdf_MTS$engel_status) ~ group, data = dfdf_MTS)
+print(logrank_test_MTS)
+
+
+
+
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,46] == 0, 1, 0)
+
+# Filter data for CD patients
+dfdf_CD <- dfdf[dfdf[,22] != 0, ]
+
+dfdf_CD$Spike_group <- dfdf_CD[,8] != 0
+dfdf_CD$HFO_group <- dfdf_CD[,10] != 0
+
+melted_data_CD <- melt(dfdf_CD, id.vars = c("duration_years", "censored"), 
+                        measure.vars = c("Spike_group", "HFO_group"))
+filtered_data_CD <- melted_data_CD[melted_data_CD$value != 0, ]
+
+fit_combined_CD <- survfit(Surv(filtered_data_CD$duration_years, filtered_data_CD$censored) ~ variable, data = filtered_data_CD)
+ggsurvplot(fit_combined_CD, data = filtered_data_CD, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+logrank_test_CD <- survdiff(Surv(filtered_data_CD$duration_years, filtered_data_CD$censored) ~ variable, data = filtered_data_CD)
+print(logrank_test_CD)
+print(fit_combined_CD)
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,42] == 0, 1, 0)
+
+# Filter data for CD patients
+dfdf_CD <- dfdf[dfdf[,22] != 0, ]
+
+dfdf_CD$Spike_group <- dfdf_CD[,8] != 0
+dfdf_CD$HFO_group <- dfdf_CD[,10] != 0
+
+melted_data_CD <- melt(dfdf_CD, id.vars = c("duration_years", "censored"), 
+                       measure.vars = c("Spike_group", "HFO_group"))
+filtered_data_CD <- melted_data_CD[melted_data_CD$value != 0, ]
+
+fit_combined_CD <- survfit(Surv(filtered_data_CD$duration_years, filtered_data_CD$censored) ~ variable, data = filtered_data_CD)
+ggsurvplot(fit_combined_CD, data = filtered_data_CD, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+logrank_test_CD <- survdiff(Surv(filtered_data_CD$duration_years, filtered_data_CD$censored) ~ variable, data = filtered_data_CD)
+print(logrank_test_CD)
+print(fit_combined_CD)
+
+# Convert follow-up months to years
+dfdf$duration_years <- dfdf[,7] / 12
+
+# Combine Engel scores
+dfdf$engel_status <- ifelse(dfdf[,42] > 0 | dfdf[,46] > 0, 1, 
+                            ifelse(dfdf[,44] > 0 | dfdf[,48] > 0, 0, NA))
+
+# Remove records with NA in engel_status
+dfdf <- dfdf[!is.na(dfdf$engel_status),]
+
+# Filter data for MTS patients
+dfdf_CD <- dfdf[dfdf[,22] != 0, ]
+
+dfdf_CD$group <- ifelse(dfdf_CD[,8] > 0, "Spike", 
+                         ifelse(dfdf_CD[,10] > 0, "HFO", NA))
+
+# Fit the combined Kaplan-Meier survival curves for MTS patients
+fit_combined_CD <- survfit(Surv(dfdf_CD$duration_years, dfdf_CD$engel_status) ~ group, data = dfdf_CD)
+
+# Plot the survival curves with 95% CI
+ggsurvplot(fit_combined_CD, data = dfdf_CD, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+# Conduct log-rank test for MTS patients
+logrank_test_CD <- survdiff(Surv(dfdf_CD$duration_years, dfdf_CD$engel_status) ~ group, data = dfdf_CD)
+print(logrank_test_CD)
+
+
+
+
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,46] == 0, 1, 0)
+
+# Filter data for CD patients
+dfdf_VL <- dfdf[dfdf[,24] != 0, ]
+
+dfdf_VL$Spike_group <- dfdf_VL[,8] != 0
+dfdf_VL$HFO_group <- dfdf_VL[,10] != 0
+
+melted_data_VL <- melt(dfdf_VL, id.vars = c("duration_years", "censored"), 
+                       measure.vars = c("Spike_group", "HFO_group"))
+filtered_data_VL <- melted_data_VL[melted_data_VL$value != 0, ]
+
+fit_combined_VL <- survfit(Surv(filtered_data_VL$duration_years, filtered_data_VL$censored) ~ variable, data = filtered_data_VL)
+ggsurvplot(fit_combined_VL, data = filtered_data_VL, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+logrank_test_VL <- survdiff(Surv(filtered_data_VL$duration_years, filtered_data_VL$censored) ~ variable, data = filtered_data_VL)
+print(logrank_test_VL)
+print(fit_combined_VL)
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,42] == 0, 1, 0)
+
+# Filter data for CD patients
+dfdf_VL <- dfdf[dfdf[,24] != 0, ]
+
+dfdf_VL$Spike_group <- dfdf_VL[,8] != 0
+dfdf_VL$HFO_group <- dfdf_VL[,10] != 0
+
+melted_data_VL <- melt(dfdf_VL, id.vars = c("duration_years", "censored"), 
+                       measure.vars = c("Spike_group", "HFO_group"))
+filtered_data_VL <- melted_data_VL[melted_data_VL$value != 0, ]
+
+fit_combined_VL <- survfit(Surv(filtered_data_VL$duration_years, filtered_data_VL$censored) ~ variable, data = filtered_data_VL)
+ggsurvplot(fit_combined_VL, data = filtered_data_VL, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+logrank_test_VL <- survdiff(Surv(filtered_data_VL$duration_years, filtered_data_VL$censored) ~ variable, data = filtered_data_VL)
+print(logrank_test_VL)
+print(fit_combined_VL)
+
+# Convert follow-up months to years
+dfdf$duration_years <- dfdf[,7] / 12
+
+# Combine Engel scores
+dfdf$engel_status <- ifelse(dfdf[,42] > 0 | dfdf[,46] > 0, 1, 
+                            ifelse(dfdf[,44] > 0 | dfdf[,48] > 0, 0, NA))
+
+# Remove records with NA in engel_status
+dfdf <- dfdf[!is.na(dfdf$engel_status),]
+
+# Filter data for MTS patients
+dfdf_VL <- dfdf[dfdf[,24] != 0, ]
+
+dfdf_VL$group <- ifelse(dfdf_VL[,8] > 0, "Spike", 
+                        ifelse(dfdf_VL[,10] > 0, "HFO", NA))
+
+# Fit the combined Kaplan-Meier survival curves for MTS patients
+fit_combined_VL <- survfit(Surv(dfdf_VL$duration_years, dfdf_VL$engel_status) ~ group, data = dfdf_VL)
+
+# Plot the survival curves with 95% CI
+ggsurvplot(fit_combined_VL, data = dfdf_VL, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+# Conduct log-rank test for MTS patients
+logrank_test_VL <- survdiff(Surv(dfdf_VL$duration_years, dfdf_VL$engel_status) ~ group, data = dfdf_VL)
+print(logrank_test_VL)
+
+
+
+
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,46] == 0, 1, 0)
+
+# Filter data for CD patients
+dfdf_T <- dfdf[dfdf[,32] != 0, ]
+
+dfdf_T$Spike_group <- dfdf_T[,8] != 0
+dfdf_T$HFO_group <- dfdf_T[,10] != 0
+
+melted_data_T <- melt(dfdf_T, id.vars = c("duration_years", "censored"), 
+                       measure.vars = c("Spike_group", "HFO_group"))
+filtered_data_T <- melted_data_T[melted_data_T$value != 0, ]
+
+fit_combined_T <- survfit(Surv(filtered_data_T$duration_years, filtered_data_T$censored) ~ variable, data = filtered_data_T)
+ggsurvplot(fit_combined_T, data = filtered_data_T, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+logrank_test_T <- survdiff(Surv(filtered_data_T$duration_years, filtered_data_T$censored) ~ variable, data = filtered_data_T)
+print(logrank_test_T)
+print(fit_combined_T)
+
+dfdf$duration_years <- dfdf[,7] / 12
+dfdf$censored <- ifelse(dfdf[,42] == 0, 1, 0)
+
+# Filter data for CD patients
+dfdf_T <- dfdf[dfdf[,32] != 0, ]
+
+dfdf_T$Spike_group <- dfdf_T[,8] != 0
+dfdf_T$HFO_group <- dfdf_T[,10] != 0
+
+melted_data_T <- melt(dfdf_T, id.vars = c("duration_years", "censored"), 
+                      measure.vars = c("Spike_group", "HFO_group"))
+filtered_data_T <- melted_data_T[melted_data_T$value != 0, ]
+
+fit_combined_T <- survfit(Surv(filtered_data_T$duration_years, filtered_data_T$censored) ~ variable, data = filtered_data_T)
+ggsurvplot(fit_combined_T, data = filtered_data_T, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+logrank_test_T <- survdiff(Surv(filtered_data_T$duration_years, filtered_data_T$censored) ~ variable, data = filtered_data_T)
+print(logrank_test_T)
+print(fit_combined_T)
+
+# Convert follow-up months to years
+dfdf$duration_years <- dfdf[,7] / 12
+
+# Combine Engel scores
+dfdf$engel_status <- ifelse(dfdf[,42] > 0 | dfdf[,46] > 0, 1, 
+                            ifelse(dfdf[,44] > 0 | dfdf[,48] > 0, 0, NA))
+
+# Remove records with NA in engel_status
+dfdf <- dfdf[!is.na(dfdf$engel_status),]
+
+# Filter data for MTS patients
+dfdf_T <- dfdf[dfdf[,32] != 0, ]
+
+dfdf_T$group <- ifelse(dfdf_T[,8] > 0, "Spike", 
+                        ifelse(dfdf_T[,10] > 0, "HFO", NA))
+
+# Fit the combined Kaplan-Meier survival curves for MTS patients
+fit_combined_T <- survfit(Surv(dfdf_T$duration_years, dfdf_T$engel_status) ~ group, data = dfdf_T)
+
+# Plot the survival curves with 95% CI
+ggsurvplot(fit_combined_T, data = dfdf_T, conf.int = TRUE, legend = "bottom", risk.table = "absolute", palette = c("blue", "red"))
+
+# Conduct log-rank test for MTS patients
+logrank_test_T <- survdiff(Surv(dfdf_T$duration_years, dfdf_T$engel_status) ~ group, data = dfdf_T)
+print(logrank_test_T)
